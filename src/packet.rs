@@ -1,5 +1,3 @@
-use core::error;
-
 pub struct BytePacketBuffer {
     pub buff: [u8; 512],
     pub pos: usize,
@@ -33,6 +31,16 @@ impl BytePacketBuffer {
         self.pos += 1;
         Ok(byte_read)
     }
+    /// writes a single byte and moves one step forward
+    pub fn write(&mut self, val: u8) -> Result<(), Box<dyn std::error::Error>> {
+        if self.pos >= 512 {
+            return Err("End of buffer bounds".into());
+        }
+
+        self.buff[self.pos] = val;
+        self.pos += 1;
+        Ok(())
+    }
     /// get a single byte without changing the buffer position
     pub fn get(&mut self, pos: usize) -> Result<u8, Box<dyn std::error::Error>> {
         if pos >= 512 {
@@ -52,13 +60,27 @@ impl BytePacketBuffer {
         let bytes = &self.buff[start..start + length];
         Ok(bytes)
     }
+    pub fn write_u16(&mut self, val: u16) -> Result<(), Box<dyn std::error::Error>> {
+        self.write((val >> 8) as u8)?;
+        self.write((val & 0xff) as u8)?;
 
+        Ok(())
+    }
     ///read 2 bytes, stepping 2 steps forward
     pub fn read_u16(&mut self) -> Result<u16, Box<dyn std::error::Error>> {
         let ret = (self.read()? as u16) << 8 | self.read()? as u16;
 
         Ok(ret)
     }
+    pub fn write_u32(&mut self, val: u32) -> Result<(), Box<dyn std::error::Error>> {
+        self.write(((val >> 24) & 0xFF) as u8)?;
+        self.write(((val >> 16) & 0xFF) as u8)?;
+        self.write(((val >> 8) & 0xFF) as u8)?;
+        self.write(((val >> 0) & 0xFF) as u8)?;
+
+        Ok(())
+    }
+
     /// read four bytes, step four bytes forward
     pub fn read_u32(&mut self) -> Result<u32, Box<dyn std::error::Error>> {
         let ret = (self.read()? as u32) << 24
@@ -66,6 +88,22 @@ impl BytePacketBuffer {
             | (self.read()? as u32) << 8
             | (self.read()? as u32) << 0;
         Ok(ret)
+    }
+
+    pub fn write_qname(&mut self, qname: &str) -> Result<(), Box<dyn std::error::Error>> {
+        for label in qname.split('.') {
+            let len = label.len();
+            if len > 0x3f {
+                return Err("Label length exceeds 63 characters".into());
+            }
+
+            self.write(len as u8)?;
+            for b in label.as_bytes() {
+                self.write(*b)?;
+            }
+        }
+        self.write(0 as u8)?;
+        Ok(())
     }
     /// read a qname
     pub fn read_qname(&mut self, outstr: &mut String) -> Result<(), Box<dyn std::error::Error>> {

@@ -1,3 +1,5 @@
+use core::error;
+
 use crate::{
     header::DnsHeader,
     packet::BytePacketBuffer,
@@ -23,6 +25,31 @@ impl DnsPackets {
             authoritiees: Vec::new(),
             resources: Vec::new(),
         }
+    }
+    pub fn write(
+        &mut self,
+        packet: &mut BytePacketBuffer,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.header.questions = self.questions.len() as u16;
+        self.header.answers = self.answers.len() as u16;
+        self.header.authorative_entries = self.authoritiees.len() as u16;
+        self.header.resource_entries = self.resources.len() as u16;
+
+        self.header.write(packet)?;
+        for question in &self.questions {
+            question.write(packet)?;
+        }
+        for answer in &self.answers {
+            answer.write(packet)?;
+        }
+
+        for authority in &self.authoritiees {
+            authority.write(packet)?;
+        }
+        for resource in &self.resources {
+            resource.write(packet)?;
+        }
+        Ok(())
     }
     pub fn from_buffer(
         buffer: &mut BytePacketBuffer,

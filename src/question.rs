@@ -35,6 +35,13 @@ impl DnsQuestion {
         Self { name, qtype }
     }
 
+    pub fn write(&self, packet: &mut BytePacketBuffer) -> Result<(), Box<dyn std::error::Error>> {
+        packet.write_qname(&self.name)?;
+        let numbtype = u16::from(self.qtype);
+        packet.write_u16(numbtype)?;
+        packet.write_u16(1)?;
+        Ok(())
+    }
     pub fn read(
         &mut self,
         packet: &mut BytePacketBuffer,

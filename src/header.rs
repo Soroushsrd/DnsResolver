@@ -1,5 +1,3 @@
-use std::process::id;
-
 use crate::packet::BytePacketBuffer;
 
 /// for reference purposes:
@@ -82,6 +80,32 @@ impl DnsHeader {
             resource_entries: 0,
         }
     }
+    pub fn write(
+        &mut self,
+        packet: &mut BytePacketBuffer,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        packet.write_u16(self.id)?;
+        packet.write(
+            (self.recursion_desired as u8)
+                | ((self.truncated_msg as u8) << 1)
+                | ((self.authorative_answer as u8) << 2)
+                | ((self.opcode as u8) << 3)
+                | ((self.response as u8) << 7),
+        )?;
+        packet.write(
+            (self.rescode as u8)
+                | ((self.checking_disabled as u8) << 4)
+                | ((self.authed_data as u8) << 5)
+                | ((self.z as u8) << 6)
+                | ((self.recursion_available as u8) << 7),
+        )?;
+        packet.write_u16(self.questions)?;
+        packet.write_u16(self.answers)?;
+        packet.write_u16(self.authorative_entries)?;
+        packet.write_u16(self.resource_entries)?;
+        Ok(())
+    }
+
     pub fn read(
         &mut self,
         packet: &mut BytePacketBuffer,

@@ -50,4 +50,33 @@ impl DnsRecord {
             }
         }
     }
+    pub fn write(
+        &self,
+        packet: &mut BytePacketBuffer,
+    ) -> Result<usize, Box<dyn std::error::Error>> {
+        let start_pos = packet.pos();
+        match *self {
+            DnsRecord::A {
+                ref domain,
+                addr,
+                ttl,
+            } => {
+                packet.write_qname(&domain)?;
+                packet.write_u16(u16::from(QueryType::A))?;
+                packet.write_u16(1)?;
+                packet.write_u32(ttl)?;
+                packet.write_u16(4)?;
+
+                let octets = addr.octets();
+                packet.write(octets[0])?;
+                packet.write(octets[1])?;
+                packet.write(octets[2])?;
+                packet.write(octets[3])?;
+            }
+            DnsRecord::Unknown { .. } => {
+                println!("Skipping record: {:?}", self);
+            }
+        }
+        Ok(packet.pos - start_pos)
+    }
 }

@@ -1,4 +1,4 @@
-use std::{fs::File, io::Read, net::UdpSocket};
+use std::net::UdpSocket;
 
 use dnsmsg::DnsPackets;
 use packet::BytePacketBuffer;
@@ -11,8 +11,8 @@ pub mod question;
 pub mod record;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Perform an A query for google.com
-    let qname = "google.com";
-    let qtype = QueryType::A;
+    let qname = "www.yahoo.com";
+    let qtype = QueryType::MX;
 
     // Using googles public DNS server
     let server = ("8.8.8.8", 53);

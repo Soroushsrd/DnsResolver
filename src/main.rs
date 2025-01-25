@@ -1,4 +1,4 @@
-use std::net::UdpSocket;
+use std::{io::Read, net::UdpSocket};
 
 use dnsmsg::DnsPackets;
 use header::ResultCode;
@@ -12,16 +12,13 @@ pub mod question;
 pub mod record;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let socket = UdpSocket::bind(("0.0.0.0", 2053))?;
-
+    println!("Entering the main loop...");
     //sequentially receiving queries!
     loop {
-        match handle_query(&socket) {
-            Ok(_) => {}
-            Err(e) => eprint!("an error occured: {:?}", e),
+        if let Err(e) = handle_query(&socket) {
+            eprint!("an error occured: {:?}", e);
         }
     }
-
-    Ok(())
 }
 
 fn handle_query(socket: &UdpSocket) -> Result<(), Box<dyn std::error::Error>> {
@@ -87,7 +84,7 @@ fn lookup(qname: &str, qtype: QueryType) -> Result<DnsPackets, Box<dyn std::erro
     let server = ("8.8.8.8", 53);
 
     // Bind a UDP socket to an arbitrary port
-    let socket = UdpSocket::bind(("0.0.0.0", 43211))?;
+    let socket = UdpSocket::bind(("0.0.0.0", 43210))?;
 
     // Build our query packet. It's important that we remember to set the
     // `recursion_desired` flag. As noted earlier, the packet id is arbitrary.
